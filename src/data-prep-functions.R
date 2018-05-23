@@ -91,12 +91,6 @@ speciesDataPrep <- function(bbsDataPath, species, unmod.sp,
   bcan <- birds
   rcan <- route
   
-  # SAME DEAL AS ABOVE, USE TO DELETE SOME DATA
-  #states <- c(68,76)
-  #birds <- birds[ which(birds$state %in% states), ]
-  #route <- route[ which(route$state %in% states), ]
-  #st.areas <- st.areas[ which(st.areas$state %in% states), ]
-  
   dta <- bugsdataprep(sp.1 = sp.1,sp.1f = sp.1f, sp.2 = sp.2,
                       dir.spsp = dir.spsp, outdata = T,
                       minNRoutes = 3,# require 3 or more routes where species has been observed 
@@ -164,5 +158,11 @@ speciesDataPrep <- function(bbsDataPath, species, unmod.sp,
   
   nstrata=length(unique(spsp.f$strat))  
   
-  return(knotsX)
+  return(list(nknots = nknots,
+              X.basis = X.basis,
+              spsp.f = spsp.f,
+              ymin = ymin,
+              ymax = ymax,
+              pR.wts = pR.wts,
+              nobservers = nobservers))
 }
