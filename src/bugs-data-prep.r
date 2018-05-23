@@ -1,7 +1,7 @@
 #######################################
 # Adam C. Smith
 # GAM k-Fold Cross Validation
-# bugs-data-prep.r
+# src/bugs-data-prep.r
 #######################################
 
 bugsdataprep <- function(sp.1 = sp.1,sp.1f = sp.1, 
@@ -10,7 +10,8 @@ bugsdataprep <- function(sp.1 = sp.1,sp.1f = sp.1,
                          outdata = F,
                          minNRoutes = 3, 
                          minMaxRouteYears = 5,
-                         minMeanRouteYears = 3) {
+                         minMeanRouteYears = 3, bcan = bcan, 
+                         rcan = rcan) {
 
 #sp.1 = sp.1;sp.1f = sp.1f; sp.2 = sp.2;dir.spsp = dir.spsp; strata.rem = NA; outdata = F
 
