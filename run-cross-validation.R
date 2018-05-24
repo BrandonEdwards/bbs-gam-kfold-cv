@@ -101,7 +101,7 @@ jagsModFull <- runModel(data.jags,
                         nChains,
                         adaptSteps,
                         nIter,
-                        0,
+                        burnInSteps,
                         thinSteps)
 
 # Save the entire jags file for future use
