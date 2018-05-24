@@ -133,10 +133,11 @@ for (index in speciesIndex)
   estCountVector <- rep(NA, nrow(data.prep$spsp.f))
   logProbVector <- rep(NA, nrow(data.prep$spsp.f))
   devianceVector <- rep(NA, nrow(data.prep$spsp.f))
+  loglikVector <- rep(NA, nrow(data.prep$spsp.f))
   
   kfoldDataFrame <- data.frame(cbind(countsVector, estCountVector, logProbVector, devianceVector,
-                                     yearVector, rYearVector))
-  names(kfoldDataFrame) <- c("True.Count", "Est.Count", "logprob", "deviance", "year", "rYear")
+                                     loglikVector, yearVector, rYearVector))
+  names(kfoldDataFrame) <- c("True.Count", "Est.Count", "logprob", "deviance", "loglik", "year", "rYear")
   
   for (year in data.prep$ymin:data.prep$ymax)
   {
@@ -184,6 +185,7 @@ for (index in speciesIndex)
       kfoldDataFrame[indicesToRemove[i],]$Est.Count <- monitoredValues[i,]$LambdaSubset
       kfoldDataFrame[indicesToRemove[i],]$logprob <- monitoredValues[i,]$logprob
       kfoldDataFrame[indicesToRemove[i],]$deviance <- monitoredValues[i,]$deviance
+      kfoldDataFrame[indicesToRemove[i],]$loglik <- monitoredValues[i,]$loglik
     }
     
   }
