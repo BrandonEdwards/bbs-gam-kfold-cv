@@ -138,7 +138,7 @@ for (index in speciesIndex)
     indicesToRemove <- which(data.prep$spsp.f$year == year)
     trueCount <- data.prep$spsp.f[indicesToRemove, ]$count
     
-    nRemove <- as.integer(length(I))
+    nRemove <- as.integer(length(indicesToRemove))
     
     temp <- data.prep$spsp.f
     temp[indicesToRemove, ]$count <- NA
