@@ -24,6 +24,7 @@ nChains = 3 # Number of chains to run.
 numSavedSteps=2000 # Total number of steps to save.
 thinSteps=10 # Number of steps to "thin" (1=keep every step).
 nIter = ceiling( ( numSavedSteps * thinSteps ) / nChains ) # Steps per chain.
+runParallel = TRUE #should just keep this set to true for that speedy parallel goodness
 
 #######################################
 # Import Libraries and Files
@@ -109,14 +110,18 @@ for (index in speciesIndex)
                           adaptSteps,
                           nIter,
                           burnInSteps,
-                          thinSteps)
+                          thinSteps,
+                          parallel = runParallel)
   
   # Save the entire jags file for future use
   save(jagsModFull, file = paste(data.prep$dir, "/full.Rdata", sep=""))
   
   # Extract the coefficients for each parameter to use as initializations 
-  mcmc.params <- coef(jagsModFull$model)
+  mcmc.paramsC1 <- as.list(jagsModFull$model$cluster1$state()[[1]])
+  mcmc.paramsC2 <- as.list(jagsModFull$model$cluster2$state()[[1]])
+  mcmc.paramsC3 <- as.list(jagsModFull$model$cluster3$state()[[1]])
   
+  mcmc.params <- list(mcmc.paramsC1, mcmc.paramsC2, mcmc.paramsC3)
 #######################################
 # k-Fold Cross validation
 #######################################
@@ -165,8 +170,9 @@ for (index in speciesIndex)
     print(paste("Sp. ",spNum, "/",totalSp, " ", data.prep$sp.1, " Year ", year, "/", 
                 data.prep$ymax, " removed ", date(), sep = ""))
     # re-run the model with the new dataset (same data as before, just with NAs this time)
-    jagsjob = runModel(data.jags, inits, params, looMod,
-                       nChains = 3, adaptSteps, nIter, 0, thinSteps)
+    jagsjob = runModel(data.jags, mcmc.params, params, looMod,
+                       nChains = 3, adaptSteps, nIter/100, 0, 
+                       thinSteps, parallel = runParallel)
     
     save(jagsjob, file = paste(data.prep$dir, "/year", year, 
                                "removed.Rdata", sep=""))
