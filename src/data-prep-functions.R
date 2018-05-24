@@ -165,5 +165,6 @@ speciesDataPrep <- function(bbsDataPath, species, unmod.sp,
               ymax = ymax,
               pR.wts = pR.wts,
               nobservers = nobservers,
-              dir = dir.spsp))
+              dir = dir.spsp,
+              sp.1 = sp.1))
 }
