@@ -99,7 +99,7 @@ for (index in speciesIndex)
   sp.params = c("beta.X",
                 "strata",
                 "STRATA",
-                "n")
+                "n", "loglik")
   
   print(paste("Sp. ",spNum, "/",totalSp, " ", data.prep$sp.1, " FULL RUN ", date(), sep = ""))
   jagsModFull <- runModel(data.jags,
@@ -165,13 +165,13 @@ for (index in speciesIndex)
                       Y = trueCount,
                       nRemove = nRemove)
     
-    params <- c("logprob", "LambdaSubset")
+    params <- c("logprob", "LambdaSubset", "loglik")
     
     print(paste("Sp. ",spNum, "/",totalSp, " ", data.prep$sp.1, " Year ", year, "/", 
                 data.prep$ymax, " removed ", date(), sep = ""))
     # re-run the model with the new dataset (same data as before, just with NAs this time)
     jagsjob = runModel(data.jags, mcmc.params, params, looMod,
-                       nChains = 3, adaptSteps, nIter/100, 0, 
+                       nChains = 3, adaptSteps, nIter, 0, 
                        thinSteps, parallel = runParallel)
     
     save(jagsjob, file = paste(data.prep$dir, "/year", year, 
