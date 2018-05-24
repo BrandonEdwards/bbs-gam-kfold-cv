@@ -65,114 +65,117 @@ data.cleaned <- cleanData(birds,
 speciesIndex <- getSpeciesIndex(data.cleaned$species,
                                 speciesToTest) #change later to list
 
-data.prep <- speciesDataPrep(bbsDataPath,
-                             data.cleaned$species,
-                             data.cleaned$unmod.sp,
-                             data.cleaned$sptorun,
-                             data.cleaned$sptorun2,
-                             speciesIndex)
-
+for (index in speciesIndex)
+{
+  data.prep <- speciesDataPrep(bbsDataPath,
+                               data.cleaned$species,
+                               data.cleaned$unmod.sp,
+                               data.cleaned$sptorun,
+                               data.cleaned$sptorun2,
+                               index)
+  
 #######################################
 # Full Model Run
 #######################################
-
-data.jags <- list(nknots = data.prep$nknots,
-                  X.basis = data.prep$X.basis,
-                  ncounts = nrow(data.prep$spsp.f), 
-                  nstrata=length(unique(data.prep$spsp.f$strat)), 
-                  ymin = data.prep$ymin, 
-                  ymax = data.prep$ymax,
-                  nonzeroweight = data.prep$pR.wts$p.r.ever, 
-                  count = as.integer(data.prep$spsp.f$count), 
-                  strat = as.integer(data.prep$spsp.f$strat), 
-                  obser = as.integer(data.prep$spsp.f$obser), 
-                  year = data.prep$spsp.f$year,
-                  firstyr = data.prep$spsp.f$firstyr,
-                  nobservers = data.prep$nobservers)
-
-sp.params = c("beta.X",
-              "strata",
-              "STRATA",
-              "n")
-
-jagsModFull <- runModel(data.jags,
-                        NULL,
-                        sp.params,
-                        mod,
-                        nChains,
-                        adaptSteps,
-                        nIter,
-                        burnInSteps,
-                        thinSteps)
-
-# Save the entire jags file for future use
-save(jagsModFull, file = paste(data.prep$dir, "/full.Rdata", sep=""))
-
-# Extract the coefficients for each parameter to use as initializations 
-mcmc.params <- coef(jagsModFull$model)
-
-#######################################
-# k-Fold Cross validation
-#######################################
-
-# Create empty data frame to add in estimates and logprobs
-countsVector <- data.prep$spsp.f$count
-yearVector <- data.prep$spsp.f$year
-rYearVector <- data.prep$spsp.f$rYear
-estCountVector <- rep(NA, nrow(data.prep$spsp.f))
-logProbVector <- rep(NA, nrow(data.prep$spsp.f))
-devianceVector <- rep(NA, nrow(data.prep$spsp.f))
-
-kfoldDataFrame <- data.frame(cbind(countsVector, estCountVector, logProbVector, devianceVector,
-                        yearVector, rYearVector))
-names(kfoldDataFrame) <- c("True.Count", "Est.Count", "logprob", "deviance", "year", "rYear")
-
-for (year in data.prep$ymin:data.prep$ymax)
-{
-  indicesToRemove <- which(data.prep$spsp.f$year == year)
-  trueCount <- data.prep$spsp.f[indicesToRemove, ]$count
-
-  nRemove <- as.integer(length(I))
-  
-  temp <- data.prep$spsp.f
-  temp[indicesToRemove, ]$count <- NA
   
   data.jags <- list(nknots = data.prep$nknots,
                     X.basis = data.prep$X.basis,
-                    ncounts = nrow(temp), 
-                    nstrata=length(unique(temp$strat)), 
+                    ncounts = nrow(data.prep$spsp.f), 
+                    nstrata=length(unique(data.prep$spsp.f$strat)), 
                     ymin = data.prep$ymin, 
                     ymax = data.prep$ymax,
                     nonzeroweight = data.prep$pR.wts$p.r.ever, 
-                    count = as.integer(temp$count), 
-                    strat = as.integer(temp$strat), 
-                    obser = as.integer(temp$obser), 
-                    year = temp$year,
-                    firstyr = temp$firstyr,
-                    nobservers = data.prep$nobservers,
-                    I = indicesToRemove,
-                    Y = trueCount,
-                    nRemove = nRemove)
+                    count = as.integer(data.prep$spsp.f$count), 
+                    strat = as.integer(data.prep$spsp.f$strat), 
+                    obser = as.integer(data.prep$spsp.f$obser), 
+                    year = data.prep$spsp.f$year,
+                    firstyr = data.prep$spsp.f$firstyr,
+                    nobservers = data.prep$nobservers)
   
-  params <- c("logprob", "LambdaSubset")
+  sp.params = c("beta.X",
+                "strata",
+                "STRATA",
+                "n")
   
-  # re-run the model with the new dataset (same data as before, just with NAs this time)
-  jagsjob = runModel(data.jags, inits, params, looMod,
-                     nChains = 3, adaptSteps, nIter, 0, thinSteps)
+  jagsModFull <- runModel(data.jags,
+                          NULL,
+                          sp.params,
+                          mod,
+                          nChains,
+                          adaptSteps,
+                          nIter,
+                          burnInSteps,
+                          thinSteps)
   
-  save(jagsjob, file = paste(data.prep$dir, "/year", year, 
-                                 "removed.Rdata", sep=""))
-
-  monitoredValues <- as.data.frame(jagsjob$mean)
+  # Save the entire jags file for future use
+  save(jagsModFull, file = paste(data.prep$dir, "/full.Rdata", sep=""))
   
-  for (i in 1:nRemove)
+  # Extract the coefficients for each parameter to use as initializations 
+  mcmc.params <- coef(jagsModFull$model)
+  
+#######################################
+# k-Fold Cross validation
+#######################################
+  
+  # Create empty data frame to add in estimates and logprobs
+  countsVector <- data.prep$spsp.f$count
+  yearVector <- data.prep$spsp.f$year
+  rYearVector <- data.prep$spsp.f$rYear
+  estCountVector <- rep(NA, nrow(data.prep$spsp.f))
+  logProbVector <- rep(NA, nrow(data.prep$spsp.f))
+  devianceVector <- rep(NA, nrow(data.prep$spsp.f))
+  
+  kfoldDataFrame <- data.frame(cbind(countsVector, estCountVector, logProbVector, devianceVector,
+                                     yearVector, rYearVector))
+  names(kfoldDataFrame) <- c("True.Count", "Est.Count", "logprob", "deviance", "year", "rYear")
+  
+  for (year in data.prep$ymin:data.prep$ymax)
   {
-    kfoldDataFrame[indicesToRemove[i],]$Est.Count <- monitoredValues[i,]$LambdaSubset
-    kfoldDataFrame[indicesToRemove[i],]$logprob <- monitoredValues[i,]$logprob
-    kfoldDataFrame[indicesToRemove[i],]$deviance <- monitoredValues[i,]$deviance
+    indicesToRemove <- which(data.prep$spsp.f$year == year)
+    trueCount <- data.prep$spsp.f[indicesToRemove, ]$count
+    
+    nRemove <- as.integer(length(I))
+    
+    temp <- data.prep$spsp.f
+    temp[indicesToRemove, ]$count <- NA
+    
+    data.jags <- list(nknots = data.prep$nknots,
+                      X.basis = data.prep$X.basis,
+                      ncounts = nrow(temp), 
+                      nstrata=length(unique(temp$strat)), 
+                      ymin = data.prep$ymin, 
+                      ymax = data.prep$ymax,
+                      nonzeroweight = data.prep$pR.wts$p.r.ever, 
+                      count = as.integer(temp$count), 
+                      strat = as.integer(temp$strat), 
+                      obser = as.integer(temp$obser), 
+                      year = temp$year,
+                      firstyr = temp$firstyr,
+                      nobservers = data.prep$nobservers,
+                      I = indicesToRemove,
+                      Y = trueCount,
+                      nRemove = nRemove)
+    
+    params <- c("logprob", "LambdaSubset")
+    
+    # re-run the model with the new dataset (same data as before, just with NAs this time)
+    jagsjob = runModel(data.jags, inits, params, looMod,
+                       nChains = 3, adaptSteps, nIter, 0, thinSteps)
+    
+    save(jagsjob, file = paste(data.prep$dir, "/year", year, 
+                               "removed.Rdata", sep=""))
+    
+    monitoredValues <- as.data.frame(jagsjob$mean)
+    
+    for (i in 1:nRemove)
+    {
+      kfoldDataFrame[indicesToRemove[i],]$Est.Count <- monitoredValues[i,]$LambdaSubset
+      kfoldDataFrame[indicesToRemove[i],]$logprob <- monitoredValues[i,]$logprob
+      kfoldDataFrame[indicesToRemove[i],]$deviance <- monitoredValues[i,]$deviance
+    }
+    
   }
   
+  write.csv(kfoldDataFrame, file = paste(data.prep$dir, "/lambdaEstimates.csv", sep=""))  
 }
-  
-write.csv(kfoldDataFrame, file = paste(data.prep$dir, "/lambdaEstimates.csv", sep=""))
 
