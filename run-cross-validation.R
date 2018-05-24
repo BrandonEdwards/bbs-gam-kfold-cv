@@ -65,8 +65,11 @@ data.cleaned <- cleanData(birds,
 speciesIndex <- getSpeciesIndex(data.cleaned$species,
                                 speciesToTest) #change later to list
 
+spNum <- 1
+totalSp <- length(speciesToTest)
 for (index in speciesIndex)
 {
+  print(paste("Sp. ",spNum, "/",totalSp))
   data.prep <- speciesDataPrep(bbsDataPath,
                                data.cleaned$species,
                                data.cleaned$unmod.sp,
@@ -97,6 +100,7 @@ for (index in speciesIndex)
                 "STRATA",
                 "n")
   
+  print(paste("Sp. ",spNum, "/",totalSp, " ", data.prep$sp.1, " FULL RUN", sep = ""))
   jagsModFull <- runModel(data.jags,
                           NULL,
                           sp.params,
@@ -158,6 +162,8 @@ for (index in speciesIndex)
     
     params <- c("logprob", "LambdaSubset")
     
+    print(paste("Sp. ",spNum, "/",totalSp, " ", data.prep$sp.1, " Year ", year, "/", 
+                data.prep$ymax, " removed", sep = ""))
     # re-run the model with the new dataset (same data as before, just with NAs this time)
     jagsjob = runModel(data.jags, inits, params, looMod,
                        nChains = 3, adaptSteps, nIter, 0, thinSteps)
@@ -176,6 +182,8 @@ for (index in speciesIndex)
     
   }
   
-  write.csv(kfoldDataFrame, file = paste(data.prep$dir, "/lambdaEstimates.csv", sep=""))  
+  write.csv(kfoldDataFrame, file = paste(data.prep$dir, "/lambdaEstimates.csv", sep=""))
+  
+  spNum <- spNum + 1
 }
 
