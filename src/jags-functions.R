@@ -28,7 +28,7 @@ inits <- function()
   }
 
 runModel <- function(data.jags, initVals, sp.params, mod,
-                     nChains, nAdapt, nIter, nBurnin, nThin)
+                     nChains, nAdapt, nIter, nBurnin, nThin, parallel)
 {
   return(jags(data = data.jags,
                   inits = initVals,
@@ -38,5 +38,6 @@ runModel <- function(data.jags, initVals, sp.params, mod,
                   n.adapt = nAdapt,
                   n.iter = nIter + nBurnin,
                   n.burnin = nBurnin,
-                  n.thin = nThin))
+                  n.thin = nThin,
+                  parallel = parallel))
 }
