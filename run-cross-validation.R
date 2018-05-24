@@ -100,7 +100,7 @@ for (index in speciesIndex)
                 "STRATA",
                 "n")
   
-  print(paste("Sp. ",spNum, "/",totalSp, " ", data.prep$sp.1, " FULL RUN", sep = ""))
+  print(paste("Sp. ",spNum, "/",totalSp, " ", data.prep$sp.1, " FULL RUN ", date(), sep = ""))
   jagsModFull <- runModel(data.jags,
                           NULL,
                           sp.params,
@@ -163,7 +163,7 @@ for (index in speciesIndex)
     params <- c("logprob", "LambdaSubset")
     
     print(paste("Sp. ",spNum, "/",totalSp, " ", data.prep$sp.1, " Year ", year, "/", 
-                data.prep$ymax, " removed", sep = ""))
+                data.prep$ymax, " removed ", date(), sep = ""))
     # re-run the model with the new dataset (same data as before, just with NAs this time)
     jagsjob = runModel(data.jags, inits, params, looMod,
                        nChains = 3, adaptSteps, nIter, 0, thinSteps)
