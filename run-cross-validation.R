@@ -18,7 +18,12 @@ remove(list = ls())
 
 bbsDataPath <- "input/bbs data 2016 continent.RData"
 speciesToTest <- c("King Rail")
-#setwd("C:/2016gam")
+adaptSteps = 500  # Number of steps to "tune" the samplers.
+burnInSteps = 20000 # Number of steps to "burn-in" the samplers.
+nChains = 3 # Number of chains to run.
+numSavedSteps=2000 # Total number of steps to save.
+thinSteps=10 # Number of steps to "thin" (1=keep every step).
+nIter = ceiling( ( numSavedSteps * thinSteps ) / nChains ) # Steps per chain.
 
 #######################################
 # Import Libraries and Files
@@ -27,19 +32,22 @@ speciesToTest <- c("King Rail")
 #install.packages("runjags")
 #install.packages("rjags")
 #install.packages("R2jags")
-library(runjags)
-library(rjags)
-library(R2jags)
+#install.packages("jagsUI")
+#library(runjags)
+#ibrary(rjags)
+#library(R2jags)
+library(jagsUI)
 
 source("src/data-prep-functions.r")
+source("src/jags-functions.R")
 
 #######################################
 # Read Data
 #######################################
 
 load(bbsDataPath)
-#mod <- ("models/bbs model 16 hierarchical GAM rescaled heavy tails.txt")  
-#looMod <- ("models/bbs model 16 hierarchical GAM rescaled heavy tails LOOCV.txt") 
+mod <- ("models/bbs model 16 hierarchical GAM rescaled heavy tails.txt")  
+looMod <- ("models/bbs model 16 hierarchical GAM rescaled heavy tails LOOCV.txt") 
 
 #######################################
 # Wrangle Data
@@ -62,171 +70,106 @@ data.prep <- speciesDataPrep(bbsDataPath,
                              speciesIndex)
 
 #######################################
-# JAGS Setup
+# Full Model Run
 #######################################
 
-data.jags <- list(nknots = nknots,
-                  X.basis = X.basis,
-                  ncounts = nrow(spsp.f), 
-                  nstrata=length(unique(spsp.f$strat)), 
-                  ymin = ymin, 
-                  ymax = ymax, 
-                  #yminsc = yminsc, 
-                  #ymaxsc = ymaxsc, 
-                  #yminpred = yminpred, 
-                  #ymaxpred = ymaxpred, 
-                  #yearscale = spsp.f$yearscale,
-                  nonzeroweight = pR.wts$p.r.ever, 
-                  count = as.integer(spsp.f$count), 
-                  strat = as.integer(spsp.f$strat), 
-                  obser = as.integer(spsp.f$obser), 
-                  year = spsp.f$year,
-                  firstyr = spsp.f$firstyr, 
-                  #fixedyear = midyear2, 
-                  nobservers = nobservers)
+data.jags <- list(nknots = data.prep$nknots,
+                  X.basis = data.prep$X.basis,
+                  ncounts = nrow(data.prep$spsp.f), 
+                  nstrata=length(unique(data.prep$spsp.f$strat)), 
+                  ymin = data.prep$ymin, 
+                  ymax = data.prep$ymax,
+                  nonzeroweight = data.prep$pR.wts$p.r.ever, 
+                  count = as.integer(data.prep$spsp.f$count), 
+                  strat = as.integer(data.prep$spsp.f$strat), 
+                  obser = as.integer(data.prep$spsp.f$obser), 
+                  year = data.prep$spsp.f$year,
+                  firstyr = data.prep$spsp.f$firstyr,
+                  nobservers = data.prep$nobservers)
 
 sp.params = c("beta.X",
-              "B.X",
-              "tauX",
-              "sdbeta",
               "strata",
               "STRATA",
-              #"sdstrata",
-              "sdobs",
-              #"obs",
-              "n",
-              "posdiff",
-              "sdnoise",
-              "eta",
-              "overdisp",
-              "taulogtauobs",
-              "mulogtauobs",
-              # "exmaxlambda",
-              # "exminlambda",
-              # "minlambda",
-              # "maxlambda",
-              "maxf",
-              "meanf",
-              "nfzero",
-              "gof",
-              "fgof",
-              "diffgof")
+              "n")
 
-if("jagsMod" %in% ls()){
-  rm(list= ls()[which(ls() %in% c("jagsMod"))])
-}
+jagsModFull <- runModel(data.jags,
+                        NULL,
+                        sp.params,
+                        mod,
+                        nChains,
+                        adaptSteps,
+                        nIter,
+                        0,
+                        thinSteps)
 
-adaptSteps = 500  # Number of steps to "tune" the samplers.
-burnInSteps = 20000 # Number of steps to "burn-in" the samplers.
-nChains = 1 # Number of chains to run.
-numSavedSteps=2000 # Total number of steps to save.
-thinSteps=10 # Number of steps to "thin" (1=keep every step).
-nIter = ceiling( ( numSavedSteps * thinSteps ) / nChains ) # Steps per chain.
-
-t1 = Sys.time()
-
-#######################################
-# JAGS Initialization and Burn-in
-#######################################
-
-# Initialization
-jagsMod = jags.model( mod, 
-                      data= data.jags ,  
-                      #inits= sp.inits,  
-                      n.chains= nChains , 
-                      n.adapt= 0 )
-adaptest <- F
-while(adaptest == F)
-{
-  adaptest <- adapt(jagsMod,n.iter = adaptSteps)
-}
-
-# Burn-in
-cat( "Burning in the MCMC chain...\n" )
-update( jagsMod , n.iter=burnInSteps )
+# Save the entire jags file for future use
+save(jagsModFull, file = paste(data.prep$dir, "/full.Rdata", sep=""))
 
 # Extract the coefficients for each parameter to use as initializations 
-mcmc.params <- coef(jagsMod)
+mcmc.params <- coef(jagsModFull$model)
 
 #######################################
-# Leave one Year Out CV
+# k-Fold Cross validation
 #######################################
-year <- 1
-#for (year in ymin:ymax)
-#{
-  indicesToRemove <- which(spsp.f$year == year)
-  trueCount <- spsp.f[indicesToRemove, ]$count
-  I <- indicesToRemove
-  Y <- trueCount
+
+# Create empty data frame to add in estimates and logprobs
+countsVector <- data.prep$spsp.f$count
+yearVector <- data.prep$spsp.f$year
+rYearVector <- data.prep$spsp.f$rYear
+estCountVector <- rep(NA, nrow(data.prep$spsp.f))
+logProbVector <- rep(NA, nrow(data.prep$spsp.f))
+devianceVector <- rep(NA, nrow(data.prep$spsp.f))
+
+kfoldDataFrame <- data.frame(cbind(countsVector, estCountVector, logProbVector, devianceVector,
+                        yearVector, rYearVector))
+names(kfoldDataFrame) <- c("True.Count", "Est.Count", "logprob", "deviance", "year", "rYear")
+
+for (year in ymin:ymax)
+{
+  indicesToRemove <- which(data.prep$spsp.f$year == year)
+  trueCount <- data.prep$spsp.f[indicesToRemove, ]$count
+
   nRemove <- as.integer(length(I))
   
-  temp <- spsp.f
+  temp <- data.prep$spsp.f
   temp[indicesToRemove, ]$count <- NA
   
-  inits=function(){list(B.X = mcmc.params$B.X,
-                        Elambda = mcmc.params$Elambda,
-                        STRATA = mcmc.params$STRATA,
-                        beta.X = mcmc.params$beta.X,
-                        eta = mcmc.params$eta,
-                        fcount = mcmc.params$fcount,
-                        logtauobs = mcmc.params$logtauobs,
-                        mulogtauobs = mcmc.params$mulogtauobs,
-                        nu = mcmc.params$nu,
-                        obs = mcmc.params$obs,
-                        sdbeta = mcmc.params$sdbeta,
-                        strata = mcmc.params$strata,
-                        tauX = mcmc.params$tauX,
-                        taulogtauobs = mcmc.params$taulogtauobs,
-                        taunoise = mcmc.params$taunoise,
-                        taustrata = mcmc.params$taustrata,
-                        tauyear = mcmc.params$tauyear)}
-  
-  data.jags <- list(nknots = nknots,
-                    X.basis = X.basis,
+  data.jags <- list(nknots = data.prep$nknots,
+                    X.basis = data.prep$X.basis,
                     ncounts = nrow(temp), 
                     nstrata=length(unique(temp$strat)), 
-                    ymin = ymin, 
-                    ymax = ymax, 
-                    #yminsc = yminsc, 
-                    #ymaxsc = ymaxsc, 
-                    #yminpred = yminpred, 
-                    #ymaxpred = ymaxpred, 
-                    #yearscale = spsp.f$yearscale,
-                    nonzeroweight = pR.wts$p.r.ever, 
+                    ymin = data.prep$ymin, 
+                    ymax = data.prep$ymax,
+                    nonzeroweight = data.prep$pR.wts$p.r.ever, 
                     count = as.integer(temp$count), 
                     strat = as.integer(temp$strat), 
                     obser = as.integer(temp$obser), 
                     year = temp$year,
-                    firstyr = temp$firstyr, 
-                    #fixedyear = midyear2, 
-                    nobservers = nobservers,
-                    I = I,
+                    firstyr = temp$firstyr,
+                    nobservers = data.prep$nobservers,
+                    I = indicesToRemove,
+                    Y = trueCount,
                     nRemove = nRemove)
   
   params <- c("logprob", "LambdaSubset")
   
   # re-run the model with the new dataset (same data as before, just with NAs this time)
-  jagsjob = jags(model = looMod,
-                 inits = inits,
-                 data = data.jags,
-                 param = params,
-                 n.chain = 1,
-                 n.burnin = 0,
-                 n.iter = nIter,
-                 n.thin = 1)
-  # use these values to calculate the cross validation statistic for left out counts  
+  jagsjob = runModel(data.jags, inits, params, looMod,
+                     nChains = 3, adaptSteps, nIter/100, 0, 10)
   
-  monitoredValues <- as.data.frame(jagsjob$BUGSoutput$mean)
+  save(jagsjob, file = paste(data.prep$dir, "/year", year, 
+                                 "removed.Rdata", sep=""))
+
+  monitoredValues <- as.data.frame(jagsjob$mean)
   
-  #logprob <- NULL
-  #for (i in 1:nRemove)
-  #{
-  #  tempProb <- ((-1)*estimates$lambda[I[i]]) + (trueCount[i]*estimates$Elambda[I[i]])-log(factorial(trueCount[i]))
-  #  logprob <- c(logprob, tempProb)
-  #}
+  for (i in 1:nRemove)
+  {
+    kfoldDataFrame[indicesToRemove[i],]$Est.Count <- monitoredValues[i,]$LambdaSubset
+    kfoldDataFrame[indicesToRemove[i],]$logprob <- monitoredValues[i,]$logprob
+    kfoldDataFrame[indicesToRemove[i],]$deviance <- monitoredValues[i,]$deviance
+  }
   
-#  lambdaEstimates <- estimates[indicesToRemove, ]$lambda
+}
   
- # nRemove/nrow(spsp.f) * (sum((trueCount-lambdaEstimates)^2)/nRemove)
-#}
+write.csv(kfoldDataFrame, file = paste(data.prep$dir, "/lambdaEstimates.csv", sep=""))
 
