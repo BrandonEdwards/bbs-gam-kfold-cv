@@ -41,6 +41,8 @@ library(jagsUI)
 source("src/data-prep-functions.r")
 source("src/jags-functions.R")
 
+dir.create("output")
+
 #######################################
 # Read Data
 #######################################
