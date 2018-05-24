@@ -126,7 +126,7 @@ kfoldDataFrame <- data.frame(cbind(countsVector, estCountVector, logProbVector, 
                         yearVector, rYearVector))
 names(kfoldDataFrame) <- c("True.Count", "Est.Count", "logprob", "deviance", "year", "rYear")
 
-for (year in ymin:ymax)
+for (year in data.prep$ymin:data.prep$ymax)
 {
   indicesToRemove <- which(data.prep$spsp.f$year == year)
   trueCount <- data.prep$spsp.f[indicesToRemove, ]$count
