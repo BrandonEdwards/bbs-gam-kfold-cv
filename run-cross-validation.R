@@ -157,7 +157,7 @@ for (year in ymin:ymax)
   
   # re-run the model with the new dataset (same data as before, just with NAs this time)
   jagsjob = runModel(data.jags, inits, params, looMod,
-                     nChains = 3, adaptSteps, nIter/100, 0, 10)
+                     nChains = 3, adaptSteps, nIter, 0, thinSteps)
   
   save(jagsjob, file = paste(data.prep$dir, "/year", year, 
                                  "removed.Rdata", sep=""))
