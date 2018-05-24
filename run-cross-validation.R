@@ -99,7 +99,7 @@ for (index in speciesIndex)
   sp.params = c("beta.X",
                 "strata",
                 "STRATA",
-                "n", "loglik")
+                "n")
   
   print(paste("Sp. ",spNum, "/",totalSp, " ", data.prep$sp.1, " FULL RUN ", date(), sep = ""))
   jagsModFull <- runModel(data.jags,
@@ -133,11 +133,10 @@ for (index in speciesIndex)
   estCountVector <- rep(NA, nrow(data.prep$spsp.f))
   logProbVector <- rep(NA, nrow(data.prep$spsp.f))
   devianceVector <- rep(NA, nrow(data.prep$spsp.f))
-  loglikVector <- rep(NA, nrow(data.prep$spsp.f))
   
   kfoldDataFrame <- data.frame(cbind(countsVector, estCountVector, logProbVector, devianceVector,
                                      loglikVector, yearVector, rYearVector))
-  names(kfoldDataFrame) <- c("True.Count", "Est.Count", "logprob", "deviance", "loglik", "year", "rYear")
+  names(kfoldDataFrame) <- c("True.Count", "Est.Count", "logprob", "deviance", "year", "rYear")
   
   for (year in data.prep$ymin:data.prep$ymax)
   {
@@ -166,7 +165,7 @@ for (index in speciesIndex)
                       Y = trueCount,
                       nRemove = nRemove)
     
-    params <- c("logprob", "LambdaSubset", "loglik")
+    params <- c("logprob", "LambdaSubset")
     
     print(paste("Sp. ",spNum, "/",totalSp, " ", data.prep$sp.1, " Year ", year, "/", 
                 data.prep$ymax, " removed ", date(), sep = ""))
@@ -185,7 +184,6 @@ for (index in speciesIndex)
       kfoldDataFrame[indicesToRemove[i],]$Est.Count <- monitoredValues[i,]$LambdaSubset
       kfoldDataFrame[indicesToRemove[i],]$logprob <- monitoredValues[i,]$logprob
       kfoldDataFrame[indicesToRemove[i],]$deviance <- monitoredValues[i,]$deviance
-      kfoldDataFrame[indicesToRemove[i],]$loglik <- monitoredValues[i,]$loglik
     }
     
   }
