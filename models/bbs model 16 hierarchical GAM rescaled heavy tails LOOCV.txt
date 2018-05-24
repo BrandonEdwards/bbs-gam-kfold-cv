@@ -13,6 +13,10 @@ model
 		err[k] <- pow(count[k]-lambda[k],2)/lambda[k]
 		ferr[k] <- pow(fcount[k]-lambda[k],2)/lambda[k]
 		fzero[k] <- equals(fcount[k],0)
+
+		# This is not the one we'll monitor for the k-fold analysis, so
+		# name it something other than loglik
+		Nloglik[k] <- logdensity.pois(count[k], lambda[k])
 		#----------------------------------#
 	}
 
@@ -20,6 +24,7 @@ model
 	{
 		logprob[n] <- (-1)*lambda[I[n]] + Y[n]*Elambda[I[n]]-logfact(Y[n])
 		LambdaSubset[n] <- lambda[I[n]]
+		loglik[n] <- Nloglik[I[n]]
 	}
 
 

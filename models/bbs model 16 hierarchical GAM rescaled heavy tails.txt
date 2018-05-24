@@ -12,6 +12,7 @@ model
 		err[k] <- pow(count[k]-lambda[k],2)/lambda[k]
 		ferr[k] <- pow(fcount[k]-lambda[k],2)/lambda[k]
 		fzero[k] <- equals(fcount[k],0)
+		loglik[k] <- logdensity.pois(count[k], lambda[k])
 		#----------------------------------#
 	}
 
