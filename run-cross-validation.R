@@ -135,7 +135,7 @@ for (index in speciesIndex)
   devianceVector <- rep(NA, nrow(data.prep$spsp.f))
   
   kfoldDataFrame <- data.frame(cbind(countsVector, estCountVector, logProbVector, devianceVector,
-                                     loglikVector, yearVector, rYearVector))
+                                     yearVector, rYearVector))
   names(kfoldDataFrame) <- c("True.Count", "Est.Count", "logprob", "deviance", "year", "rYear")
   
   for (year in data.prep$ymin:data.prep$ymax)
