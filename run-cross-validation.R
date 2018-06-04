@@ -25,19 +25,19 @@ numSavedSteps=2000 # Total number of steps to save.
 thinSteps=10 # Number of steps to "thin" (1=keep every step).
 nIter = ceiling( ( numSavedSteps * thinSteps ) / nChains ) # Steps per chain.
 runParallel = TRUE #should just keep this set to true for that speedy parallel goodness
+nCores <- 3
 
 #######################################
 # Import Libraries and Files
 #######################################
 
-#install.packages("runjags")
-#install.packages("rjags")
-#install.packages("R2jags")
+
 #install.packages("jagsUI")
-#library(runjags)
-#ibrary(rjags)
-#library(R2jags)
+#install.packages("foreach")
+#install.packages("doParallel")
 library(jagsUI)
+library(foreach)
+library(doParallel)
 
 source("src/data-prep-functions.r")
 source("src/jags-functions.R")
@@ -137,6 +137,10 @@ for (index in speciesIndex)
   kfoldDataFrame <- data.frame(cbind(countsVector, estCountVector, logProbVector, devianceVector,
                                      yearVector, rYearVector))
   names(kfoldDataFrame) <- c("True.Count", "Est.Count", "logprob", "deviance", "year", "rYear")
+  
+  #Set up parallelization stuff
+  cluster <- makeCluster(nCores, type = "PSOCK")
+  # Register the cluster
   
   for (year in data.prep$ymin:data.prep$ymax)
   {
