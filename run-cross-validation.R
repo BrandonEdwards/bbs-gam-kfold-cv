@@ -140,9 +140,9 @@ for (index in speciesIndex)
   
   #Set up parallelization stuff
   cluster <- makeCluster(nCores, type = "PSOCK")
-  # Register the cluster
+  registerDoParallel(cluster)
   
-  for (year in data.prep$ymin:data.prep$ymax)
+  foreach(year=data.prep$ymin:data.prep$ymax, .packages = 'jagsUI') %dopar%
   {
     indicesToRemove <- which(data.prep$spsp.f$year == year)
     trueCount <- data.prep$spsp.f[indicesToRemove, ]$count
@@ -176,7 +176,7 @@ for (index in speciesIndex)
     # re-run the model with the new dataset (same data as before, just with NAs this time)
     jagsjob = runModel(data.jags, mcmc.params, params, looMod,
                        nChains = 3, adaptSteps, nIter, 0, 
-                       thinSteps, parallel = runParallel)
+                       thinSteps, parallel = FALSE)
     
     save(jagsjob, file = paste(data.prep$dir, "/year", year, 
                                "removed.Rdata", sep=""))
@@ -191,6 +191,8 @@ for (index in speciesIndex)
     }
     
   }
+  
+  stopCluster(cluster)
   
   write.csv(kfoldDataFrame, file = paste(data.prep$dir, "/lambdaEstimates.csv", sep=""))
   
