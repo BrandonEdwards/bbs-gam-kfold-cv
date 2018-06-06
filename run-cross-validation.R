@@ -3,7 +3,7 @@
 # GAM k-Fold Cross Validation
 # run-cross-validation.R
 # Created May 2018
-# Last Updated May 2018
+# Last Updated June 2018
 #######################################
 
 #######################################
