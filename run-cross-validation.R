@@ -17,7 +17,7 @@ remove(list = ls())
 #######################################
 
 bbsDataPath <- "input/bbs data 2016 continent.RData"
-speciesFilePath <- "input/AIspeciesToTest.csv"
+#speciesFilePath <- "input/AIspeciesToTest.csv"
 adaptSteps = 500  # Number of steps to "tune" the samplers.
 burnInSteps = 20000 # Number of steps to "burn-in" the samplers.
 nChains = 3 # Number of chains to run.
@@ -49,9 +49,9 @@ dir.create("output")
 #######################################
 
 load(bbsDataPath)
-mod <- ("models/bbs model 16 hierarchical GAM rescaled heavy tails.txt")  
-looMod <- ("models/bbs model 16 hierarchical GAM rescaled heavy tails LOOCV.txt")
-speciesToTest <- read.csv(speciesFilePath, header = F)$V1
+mod <- ("models/GAM.txt")  
+looMod <- ("models/GAM-LOOCV.txt")
+speciesToTest <- "Barn Swallow" #read.csv(speciesFilePath, header = F)$V1
 
 #######################################
 # Wrangle Data
