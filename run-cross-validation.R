@@ -26,6 +26,7 @@ thinSteps=10 # Number of steps to "thin" (1=keep every step).
 nIter = ceiling( ( numSavedSteps * thinSteps ) / nChains ) # Steps per chain.
 runParallel = TRUE #should just keep this set to true for that speedy parallel goodness
 nCores <- 3
+speciesToTest <- "Barn Swallow"
 
 #######################################
 # Import Libraries and Files
@@ -51,7 +52,7 @@ dir.create("output")
 load(bbsDataPath)
 mod <- ("models/GAM.txt")  
 looMod <- ("models/GAM-LOOCV.txt")
-speciesToTest <- "Barn Swallow" #read.csv(speciesFilePath, header = F)$V1
+#speciesToTest <- read.csv(speciesFilePath, header = F)$V1
 
 #######################################
 # Wrangle Data
@@ -94,7 +95,8 @@ for (index in speciesIndex)
                     obser = as.integer(data.prep$spsp.f$obser), 
                     year = data.prep$spsp.f$year,
                     firstyr = data.prep$spsp.f$firstyr,
-                    nobservers = data.prep$nobservers)
+                    nobservers = data.prep$nobservers,
+                    fixedyear = midyear)
   
   sp.params = c("beta.X",
                 "strata",
@@ -122,21 +124,10 @@ for (index in speciesIndex)
   mcmc.paramsC3 <- as.list(jagsModFull$model$cluster3$state()[[1]])
   
   mcmc.params <- list(mcmc.paramsC1, mcmc.paramsC2, mcmc.paramsC3)
+  
 #######################################
 # k-Fold Cross validation
 #######################################
-  
-  # Create empty data frame to add in estimates and logprobs
-  countsVector <- data.prep$spsp.f$count
-  yearVector <- data.prep$spsp.f$year
-  rYearVector <- data.prep$spsp.f$rYear
-  estCountVector <- rep(NA, nrow(data.prep$spsp.f))
-  logProbVector <- rep(NA, nrow(data.prep$spsp.f))
-  devianceVector <- rep(NA, nrow(data.prep$spsp.f))
-  
-  kfoldDataFrame <- data.frame(cbind(countsVector, estCountVector, logProbVector, devianceVector,
-                                     yearVector, rYearVector))
-  names(kfoldDataFrame) <- c("True.Count", "Est.Count", "logprob", "deviance", "year", "rYear")
   
   #Set up parallelization stuff
   cluster <- makeCluster(nCores, type = "PSOCK")
@@ -165,6 +156,7 @@ for (index in speciesIndex)
                       year = temp$year,
                       firstyr = temp$firstyr,
                       nobservers = data.prep$nobservers,
+                      fixedyear = midyear,
                       I = indicesToRemove,
                       Y = trueCount,
                       nRemove = nRemove)
@@ -180,21 +172,9 @@ for (index in speciesIndex)
     
     save(jagsjob, file = paste(data.prep$dir, "/year", year, 
                                "removed.Rdata", sep=""))
-    
-    monitoredValues <- as.data.frame(jagsjob$mean)
-    
-    for (i in 1:nRemove)
-    {
-      kfoldDataFrame[indicesToRemove[i],]$Est.Count <- monitoredValues[i,]$LambdaSubset
-      kfoldDataFrame[indicesToRemove[i],]$logprob <- monitoredValues[i,]$logprob
-      kfoldDataFrame[indicesToRemove[i],]$deviance <- monitoredValues[i,]$deviance
-    }
-    
   }
   
   stopCluster(cluster)
-  
-  write.csv(kfoldDataFrame, file = paste(data.prep$dir, "/lambdaEstimates.csv", sep=""))
   
   spNum <- spNum + 1
 }
