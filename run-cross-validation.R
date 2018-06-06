@@ -3,7 +3,7 @@
 # GAM k-Fold Cross Validation
 # run-cross-validation.R
 # Created May 2018
-# Last Updated May 2018
+# Last Updated June 2018
 #######################################
 
 #######################################
@@ -24,7 +24,6 @@ nChains = 3 # Number of chains to run.
 numSavedSteps=2000 # Total number of steps to save.
 thinSteps=10 # Number of steps to "thin" (1=keep every step).
 nIter = ceiling( ( numSavedSteps * thinSteps ) / nChains ) # Steps per chain.
-runParallel = TRUE #should just keep this set to true for that speedy parallel goodness
 nCores <- 3
 speciesToTest <- "Barn Swallow"
 
@@ -113,7 +112,7 @@ for (index in speciesIndex)
                           nIter,
                           burnInSteps,
                           thinSteps,
-                          parallel = runParallel)
+                          parallel = TRUE)
   
   # Save the entire jags file for future use
   save(jagsModFull, file = paste(data.prep$dir, "/full.Rdata", sep=""))
