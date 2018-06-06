@@ -49,7 +49,7 @@ dir.create("output")
 #######################################
 
 load(bbsDataPath)
-mod <- ("models/GAM.txt")  
+mod <- ("models/First Difference.txt")  
 looMod <- ("models/GAM-LOOCV.txt")
 #speciesToTest <- read.csv(speciesFilePath, header = F)$V1
 
@@ -68,10 +68,13 @@ speciesIndex <- getSpeciesIndex(data.cleaned$species,
 
 spNum <- 1
 totalSp <- length(speciesToTest)
+modelName <- unlist(strsplit(mod, c("/"), fixed = TRUE))[2]
+modelName <- unlist(strsplit(modelName, c("."), fixed = TRUE))[1]
 for (index in speciesIndex)
 {
-  print(paste("Sp. ",spNum, "/",totalSp))
+  print(paste("Sp. ",spNum, "/",totalSp, sep = ""))
   data.prep <- speciesDataPrep(bbsDataPath,
+                               modelName,
                                data.cleaned$species,
                                data.cleaned$unmod.sp,
                                data.cleaned$sptorun,
@@ -102,7 +105,8 @@ for (index in speciesIndex)
                 "STRATA",
                 "n")
   
-  print(paste("Sp. ",spNum, "/",totalSp, " ", data.prep$sp.1, " FULL RUN ", date(), sep = ""))
+  print(paste("Sp. ",spNum, "/",totalSp, " ", data.prep$sp.1, " ", 
+              modelName," FULL RUN ", date(), sep = ""))
   jagsModFull <- runModel(data.jags,
                           NULL,
                           sp.params,

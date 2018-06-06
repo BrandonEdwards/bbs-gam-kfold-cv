@@ -3,7 +3,7 @@
 # GAM k-Fold Cross Validation
 # data-prep-functions.R
 # Created May 2018
-# Last Updated May 2018
+# Last Updated June 2018
 #######################################
 
 source("src/bugs-data-prep.R")
@@ -69,7 +69,7 @@ getSpeciesIndex <- function(speciesList, speciesToFind)
   return(indexList)
 }
 
-speciesDataPrep <- function(bbsDataPath, species, unmod.sp,
+speciesDataPrep <- function(bbsDataPath, m, species, unmod.sp,
                             sptorun, sptorun2, speciesIndex)
 {
   #Eventually we will want a list of species to loop through. 
@@ -79,7 +79,7 @@ speciesDataPrep <- function(bbsDataPath, species, unmod.sp,
   sp.2 <- sptorun[sptorun$eng == sp.1,"sp"]
   sp.1f <- sptorun[sptorun$eng == sp.1,"sp1f"]
   
-  dir.spsp <- paste("output/xGAMreparam",sp.2,sep = "")
+  dir.spsp <- paste("output/",m,"-",sp.1,sep = "")
   
   dir.create(dir.spsp)
   
