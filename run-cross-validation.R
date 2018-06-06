@@ -25,19 +25,19 @@ numSavedSteps=2000 # Total number of steps to save.
 thinSteps=10 # Number of steps to "thin" (1=keep every step).
 nIter = ceiling( ( numSavedSteps * thinSteps ) / nChains ) # Steps per chain.
 runParallel = TRUE #should just keep this set to true for that speedy parallel goodness
+nCores <- 3
 
 #######################################
 # Import Libraries and Files
 #######################################
 
-#install.packages("runjags")
-#install.packages("rjags")
-#install.packages("R2jags")
+
 #install.packages("jagsUI")
-#library(runjags)
-#ibrary(rjags)
-#library(R2jags)
+#install.packages("foreach")
+#install.packages("doParallel")
 library(jagsUI)
+library(foreach)
+library(doParallel)
 
 source("src/data-prep-functions.r")
 source("src/jags-functions.R")
@@ -138,7 +138,11 @@ for (index in speciesIndex)
                                      yearVector, rYearVector))
   names(kfoldDataFrame) <- c("True.Count", "Est.Count", "logprob", "deviance", "year", "rYear")
   
-  for (year in data.prep$ymin:data.prep$ymax)
+  #Set up parallelization stuff
+  cluster <- makeCluster(nCores, type = "PSOCK")
+  registerDoParallel(cluster)
+  
+  foreach(year=data.prep$ymin:data.prep$ymax, .packages = 'jagsUI') %dopar%
   {
     indicesToRemove <- which(data.prep$spsp.f$year == year)
     trueCount <- data.prep$spsp.f[indicesToRemove, ]$count
@@ -172,7 +176,7 @@ for (index in speciesIndex)
     # re-run the model with the new dataset (same data as before, just with NAs this time)
     jagsjob = runModel(data.jags, mcmc.params, params, looMod,
                        nChains = 3, adaptSteps, nIter, 0, 
-                       thinSteps, parallel = runParallel)
+                       thinSteps, parallel = FALSE)
     
     save(jagsjob, file = paste(data.prep$dir, "/year", year, 
                                "removed.Rdata", sep=""))
@@ -187,6 +191,8 @@ for (index in speciesIndex)
     }
     
   }
+  
+  stopCluster(cluster)
   
   write.csv(kfoldDataFrame, file = paste(data.prep$dir, "/lambdaEstimates.csv", sep=""))
   
